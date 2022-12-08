@@ -1,0 +1,125 @@
+---
+xtitle: Final Exam
+author: "Jacob Fabian"
+date: "2022-12-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r comment=NA, echo=FALSE}
+GroupProj <- data.frame(Person = c(1:12), 
+                        GPA = c(3.5, 2.5, 3.0, 4.0, 3.3, 3.1, 3.8, 2.7, 3.2, 3.0, 3.3, 2.9), 
+                        Gender = c(0,1,1,1,0, 0,1,1,0,0,0,1), 
+                        HoursWorkedProj = c(5, 12, 4, 10, 9, 13, 8, 11, 3, 9, 15, 4), 
+                        CurrentCourseGrade = c(80, 70, 65, 40, 30, 50, 55, 25, 75, 60, 45, 75))
+GroupProj
+```
+
+```{r, results='hide', comment=NA}
+library(lpSolveAPI)
+lppoint <- make.lp(0, 48)
+set.type(lppoint, 48, "integer")
+set.objfn(lppoint, rep(c(80,70,65,40,30,50,55,25,75,60,45,75),4))
+lp.control(lppoint,sense='max')
+```
+
+```{r, comment=NA}
+add.constraint(lppoint, c(rep(1,12),rep(0,36)), "=", 3)
+add.constraint(lppoint, c(rep(0,12),rep(1,12),rep(0,24)), "=", 3)
+add.constraint(lppoint, c(rep(0,24),rep(1,12),rep(0,12)), "=", 3)
+add.constraint(lppoint, c(rep(0,36),rep(1,12)), "=", 3)
+add.constraint(lppoint, rep(GroupProj$GPA,4), ">=", 11)
+add.constraint(lppoint, rep(GroupProj$GPA,4), ">=", 10)
+add.constraint(lppoint, rep(GroupProj$GPA,4), ">=", 9)
+add.constraint(lppoint, rep(GroupProj$GPA,4), ">=", 8)
+add.constraint(lppoint, rep(GroupProj$Gender,4), ">=", 1)
+add.constraint(lppoint, rep(GroupProj$Gender,4), ">=", 1)
+add.constraint(lppoint, rep(GroupProj$Gender,4), ">=", 1)
+add.constraint(lppoint, rep(GroupProj$Gender,4), ">=", 1)
+add.constraint(lppoint, rep(GroupProj$HoursWorkedProj,4), ">=", 40)
+add.constraint(lppoint, rep(GroupProj$HoursWorkedProj,4), ">=", 35)
+add.constraint(lppoint, rep(GroupProj$HoursWorkedProj,4), ">=", 30)
+add.constraint(lppoint, rep(GroupProj$HoursWorkedProj,4), ">=", 25)
+add.constraint(lppoint, rep(c(1,rep(0,11)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,1),1,rep(0,10)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,2),1,rep(0,9)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,3),1,rep(0,8)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,4),1,rep(0,7)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,5),1,rep(0,6)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,6),1,rep(0,5)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,7),1,rep(0,4)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,8),1,rep(0,3)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,9),1,rep(0,2)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,10),1,rep(0,1)),4), "=", 1)
+add.constraint(lppoint, rep(c(rep(0,11),1),4), "=", 1)
+solve(lppoint)
+```
+
+### With the solver giving us 0, we know it is finding a solution
+
+```{r, comment=NA}
+get.objective(lppoint)
+```
+
+### The Maximum chance of success is 670 for all groups on the class project, which is the overall course grade for the class
+
+```{r, comment=NA}
+get.constraints(lppoint)
+```
+
+### Confirms all constraints are met.
+
+```{r, comment=NA}
+get.variables(lppoint)
+```
+
+### 1 determines the group they are assigned to. This is the optimal mix of group members. Of the first 12 entries, only 3 "1"s are needed and the rest are 0. 
+```{r, comment=NA, echo=FALSE}
+Group <- data.frame(Group = c(3,1,4,2,4,1,2,3,4,2,1,3))
+GroupProj_assigned <- cbind(GroupProj, Group = Group$Group)
+GroupProj_assigned
+```
+### The last column says which group each memeber is assigned to. 
+
+```{r comment=NA, figures-side, fig.show="hold", out.width="50%", echo=FALSE}
+mycolor <- colorRampPalette(c('blue','red'))
+mycolor2 <- mycolor(20)[as.numeric(cut(GroupProj_assigned$Group,breaks = 20))]
+plot(as.factor(GroupProj_assigned$Group), GroupProj_assigned$GPA, 
+     main="GPA's by Groups", 
+     xlab="Group", 
+     ylab="GPA", 
+     col = mycolor2,
+     cex.main=1.5,
+     cex.axis = 1.5,
+     pch = 15)
+plot(as.factor(GroupProj_assigned$Group), GroupProj_assigned$HoursWorkedProj, 
+     main="Hours Worked on the Project by Groups", 
+     xlab="Group", 
+     ylab="Hours Worked Proj", 
+     col = mycolor2,
+     cex.main=1.5,
+     cex.axis = 1.5,
+     pch = 15)
+plot(as.factor(GroupProj_assigned$Group), GroupProj_assigned$CurrentCourseGrade, 
+     main="Current Course Grade by Groups", 
+     xlab="Group", 
+     ylab="Current Course Grade", 
+     col = mycolor2,
+     cex.main=1.5,
+     cex.axis = 1.5,
+     pch = 15)
+``` 
+
+### The box plots show us
+
+### Group 1 spent the most time on the project.
+### Group 2 has the highest GPA. They also have the highest amount of hours worked individually.
+### Group 3 has the highest variablity of the grades. They also have the outliers of the dataset.
+### Group 4 spent the least amount of time on the project. 
+
+### Due to group 2 having the highest GPA, they have the best students in the class.
